@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Security.Claims;
 using AspNetCore.Identity.Dapper.Repositories;
 using Microsoft.AspNetCore.Identity;
@@ -11,41 +9,24 @@ using Microsoft.AspNetCore.Identity;
 namespace AspNetCore.Identity.Dapper;
 
 /// <summary>
-/// Represents a new instance of a persistence store for users, using the default implementation
-/// of <see cref="IdentityUser{TKey}"/> with a string as a primary key.
+/// Represents a new instance of a persistence store for the specified user and role types.
 /// </summary>
-public class UserStore : UserStore<IdentityUser>
+/// <typeparam name="TUser">The type representing a user.</typeparam>
+/// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
+public class UserOnlyStore<TUser> : UserOnlyStore<TUser, string>
+    where TUser : IdentityUser<string>
 {
     /// <summary>
     /// Constructs a new instance of <see cref="UserStore"/>.
     /// </summary>
     /// <param name="context">The <see cref="DbContext"/>.</param>
     /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-    public UserStore(IdentityErrorDescriber? describer, IUsersProvider<IdentityUser, string> usersProvider,
-        IRolesProvider<IdentityRole, string> rolesProvider, IUserRolesProvider<IdentityUserRole<string>, IdentityUser, string> userRolesProvider,
-        IUserLoginsProvider<IdentityUserLogin<string>, string> userLoginsProvider,
-        IUserClaimsProvider<IdentityUserClaim<string>, IdentityUser, string> userClaimsProvider,
-        IUserTokensProvider<IdentityUserToken<string>, string> userTokensProvider) : base(describer, usersProvider, rolesProvider, userRolesProvider, userLoginsProvider, userClaimsProvider, userTokensProvider)
-    {
-    }
-}
-
-/// <summary>
-/// Creates a new instance of a persistence store for the specified user type.
-/// </summary>
-/// <typeparam name="TUser">The type representing a user.</typeparam>
-public class UserStore<TUser> : UserStore<TUser, IdentityRole, string>
-    where TUser : IdentityUser, new()
-{
-    /// <summary>
-    /// Constructs a new instance of <see cref="UserStore{TUser}"/>.
-    /// </summary>
-    /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-    public UserStore(IdentityErrorDescriber? describer, IUsersProvider<TUser, string> usersProvider,
-        IRolesProvider<IdentityRole, string> rolesProvider, IUserRolesProvider<IdentityUserRole<string>, TUser, string> userRolesProvider,
+    public UserOnlyStore(IUsersProvider<TUser, string> usersProvider,
         IUserLoginsProvider<IdentityUserLogin<string>, string> userLoginsProvider,
         IUserClaimsProvider<IdentityUserClaim<string>, TUser, string> userClaimsProvider,
-        IUserTokensProvider<IdentityUserToken<string>, string> userTokensProvider) : base(describer, usersProvider, rolesProvider, userRolesProvider, userLoginsProvider, userClaimsProvider, userTokensProvider)
+        IUserTokensProvider<IdentityUserToken<string>, string> userTokensProvider,
+        IdentityErrorDescriber? describer = null) : base(usersProvider, userLoginsProvider, userClaimsProvider,
+        userTokensProvider, describer)
     {
     }
 }
@@ -54,50 +35,24 @@ public class UserStore<TUser> : UserStore<TUser, IdentityRole, string>
 /// Represents a new instance of a persistence store for the specified user and role types.
 /// </summary>
 /// <typeparam name="TUser">The type representing a user.</typeparam>
-/// <typeparam name="TRole">The type representing a role.</typeparam>
-public class UserStore<TUser, TRole> : UserStore<TUser, TRole, string>
-    where TUser : IdentityUser
-    where TRole : IdentityRole
-{
-    /// <summary>
-    /// Constructs a new instance of <see cref="UserStore{TUser, TRole, TContext}"/>.
-    /// </summary>
-    /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-    /// <param name="rolesProvider"></param>
-    public UserStore(IdentityErrorDescriber? describer, IUsersProvider<TUser, string> usersProvider,
-        IRolesProvider<TRole, string> rolesProvider, IUserRolesProvider<IdentityUserRole<string>, TUser, string> userRolesProvider,
-        IUserLoginsProvider<IdentityUserLogin<string>, string> userLoginsProvider,
-        IUserClaimsProvider<IdentityUserClaim<string>, TUser, string> userClaimsProvider,
-        IUserTokensProvider<IdentityUserToken<string>, string> userTokensProvider) : base(describer, usersProvider, rolesProvider, userRolesProvider, userLoginsProvider, userClaimsProvider, userTokensProvider)
-    {
-    }
-}
-
-/// <summary>
-/// Represents a new instance of a persistence store for the specified user and role types.
-/// </summary>
-/// <typeparam name="TUser">The type representing a user.</typeparam>
-/// <typeparam name="TRole">The type representing a role.</typeparam>
+/// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
 /// <typeparam name="TKey">The type of the primary key for a role.</typeparam>
-public class UserStore<TUser, TRole, TKey> : UserStore<TUser, TRole, TKey, IdentityUserClaim<TKey>,
-    IdentityUserRole<TKey>, IdentityUserLogin<TKey>, IdentityUserToken<TKey>, IdentityRoleClaim<TKey>>
+public class UserOnlyStore<TUser, TKey> : UserOnlyStore<TUser, TKey, IdentityUserClaim<TKey>, IdentityUserLogin<TKey>,
+    IdentityUserToken<TKey>>
     where TUser : IdentityUser<TKey>
-    where TRole : IdentityRole<TKey>
     where TKey : IEquatable<TKey>
 {
     /// <summary>
-    /// Constructs a new instance of <see cref="UserStore"/>.
+    /// Constructs a new instance of <see cref="UserStore{TUser, TRole, TContext, TKey}"/>.
     /// </summary>
+    /// <param name="context">The <see cref="DbContext"/>.</param>
     /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-    /// <param name="userClaimsProvider"></param>
-    /// <param name="userTokensProvider"></param>
-    /// <param name="usersProvider"></param>
-    /// <param name="rolesProvider"></param>
-    /// <param name="userRolesProvider"></param>
-    protected UserStore(IdentityErrorDescriber describer, IUsersProvider<TUser, TKey> usersProvider,
-        IRolesProvider<TRole, TKey> rolesProvider, IUserRolesProvider<IdentityUserRole<TKey>, TUser, TKey> userRolesProvider, IUserLoginsProvider<IdentityUserLogin<TKey>, TKey> userLoginsProvider,
+    public UserOnlyStore(IUsersProvider<TUser, TKey> usersProvider,
+        IUserLoginsProvider<IdentityUserLogin<TKey>, TKey> userLoginsProvider,
         IUserClaimsProvider<IdentityUserClaim<TKey>, TUser, TKey> userClaimsProvider,
-        IUserTokensProvider<IdentityUserToken<TKey>, TKey> userTokensProvider) : base(describer, usersProvider, rolesProvider, userRolesProvider, userLoginsProvider, userClaimsProvider, userTokensProvider)
+        IUserTokensProvider<IdentityUserToken<TKey>, TKey> userTokensProvider,
+        IdentityErrorDescriber? describer = null) : base(usersProvider, userLoginsProvider, userClaimsProvider,
+        userTokensProvider, describer)
     {
     }
 }
@@ -106,66 +61,53 @@ public class UserStore<TUser, TRole, TKey> : UserStore<TUser, TRole, TKey, Ident
 /// Represents a new instance of a persistence store for the specified user and role types.
 /// </summary>
 /// <typeparam name="TUser">The type representing a user.</typeparam>
-/// <typeparam name="TRole">The type representing a role.</typeparam>
+/// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
 /// <typeparam name="TKey">The type of the primary key for a role.</typeparam>
 /// <typeparam name="TUserClaim">The type representing a claim.</typeparam>
-/// <typeparam name="TUserRole">The type representing a user role.</typeparam>
 /// <typeparam name="TUserLogin">The type representing a user external login.</typeparam>
 /// <typeparam name="TUserToken">The type representing a user token.</typeparam>
-/// <typeparam name="TRoleClaim">The type representing a role claim.</typeparam>
-public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TKey, TUserClaim,
-    TUserRole, TUserLogin, TUserToken, TRoleClaim> :
-    UserStoreBase<TUser, TRole, TKey, TUserClaim, TUserRole, TUserLogin, TUserToken, TRoleClaim>,
+public class UserOnlyStore<TUser, TKey, TUserClaim, TUserLogin, TUserToken> :
+    UserStoreBase<TUser, TKey, TUserClaim, TUserLogin, TUserToken>,
+    IUserLoginStore<TUser>,
+    IUserClaimStore<TUser>,
+    IUserPasswordStore<TUser>,
+    IUserSecurityStampStore<TUser>,
+    IUserEmailStore<TUser>,
+    IUserLockoutStore<TUser>,
+    IUserPhoneNumberStore<TUser>,
+    IQueryableUserStore<TUser>,
+    IUserTwoFactorStore<TUser>,
+    IUserAuthenticationTokenStore<TUser>,
+    IUserAuthenticatorKeyStore<TUser>,
+    IUserTwoFactorRecoveryCodeStore<TUser>,
     IProtectedUserStore<TUser>
     where TUser : IdentityUser<TKey>
-    where TRole : IdentityRole<TKey>
     where TKey : IEquatable<TKey>
     where TUserClaim : IdentityUserClaim<TKey>, new()
-    where TUserRole : IdentityUserRole<TKey>, new()
     where TUserLogin : IdentityUserLogin<TKey>, new()
     where TUserToken : IdentityUserToken<TKey>, new()
-    where TRoleClaim : IdentityRoleClaim<TKey>, new()
 {
     /// <summary>
     /// Creates a new instance of the store.
     /// </summary>
+    /// <param name="context">The context used to access the store.</param>
     /// <param name="describer">The <see cref="IdentityErrorDescriber"/> used to describe store errors.</param>
-    /// <param name="usersProvider"></param>
-    /// <param name="rolesProvider"></param>
-    /// <param name="userRolesProvider"></param>
-    /// <param name="userLoginsProvider"></param>
-    /// <param name="userClaimsProvider"></param>
-    /// <param name="userTokensProvider"></param>
-    protected UserStore(IdentityErrorDescriber? describer, IUsersProvider<TUser, TKey> usersProvider,
-        IRolesProvider<TRole, TKey> rolesProvider, IUserRolesProvider<TUserRole, TUser, TKey> userRolesProvider,
+    public UserOnlyStore(IUsersProvider<TUser, TKey> usersProvider,
         IUserLoginsProvider<TUserLogin, TKey> userLoginsProvider,
         IUserClaimsProvider<TUserClaim, TUser, TKey> userClaimsProvider,
-        IUserTokensProvider<TUserToken, TKey> userTokensProvider) : base(describer ??
-        new IdentityErrorDescriber())
+        IUserTokensProvider<TUserToken, TKey> userTokensProvider, IdentityErrorDescriber? describer = null) : base(
+        describer ?? new IdentityErrorDescriber())
     {
         _usersProvider = usersProvider;
-        _rolesProvider = rolesProvider;
-        _userRolesProvider = userRolesProvider;
         _userLoginsProvider = userLoginsProvider;
         _userClaimsProvider = userClaimsProvider;
         _userTokensProvider = userTokensProvider;
     }
 
     private readonly IUsersProvider<TUser, TKey> _usersProvider;
-    private readonly IRolesProvider<TRole, TKey> _rolesProvider;
-    private readonly IUserRolesProvider<TUserRole, TUser, TKey> _userRolesProvider;
     private readonly IUserLoginsProvider<TUserLogin, TKey> _userLoginsProvider;
     private readonly IUserClaimsProvider<TUserClaim, TUser, TKey> _userClaimsProvider;
     private readonly IUserTokensProvider<TUserToken, TKey> _userTokensProvider;
-
-
-    /// <summary>
-    /// Gets or sets a flag indicating if changes should be persisted after CreateAsync, UpdateAsync and DeleteAsync are called.
-    /// </summary>
-    /// <value>
-    /// True if changes should be automatically persisted, otherwise false.
-    /// </value>
-    public bool AutoSaveChanges { get; set; } = true;
 
     /// <summary>
     /// Creates the specified <paramref name="user"/> in the user store.
@@ -246,6 +188,7 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfDisposed();
+        var id = ConvertIdFromString(userId);
         return _usersProvider.FindByIdAsync(userId);
     }
 
@@ -264,29 +207,6 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
         ThrowIfDisposed();
 
         return _usersProvider.FindByNameAsync(normalizedUserName);
-    }
-
-    /// <summary>
-    /// Return a role with the normalized name if it exists.
-    /// </summary>
-    /// <param name="normalizedRoleName">The normalized role name.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>The role if it exists.</returns>
-    protected override Task<TRole?> FindRoleAsync(string normalizedRoleName, CancellationToken cancellationToken)
-    {
-        return _rolesProvider.FindRoleAsync(normalizedRoleName);
-    }
-
-    /// <summary>
-    /// Return a user role for the userId and roleId if it exists.
-    /// </summary>
-    /// <param name="userId">The user's id.</param>
-    /// <param name="roleId">The role's id.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>The user role if it exists.</returns>
-    protected override Task<TUserRole?> FindUserRoleAsync(TKey userId, TKey roleId, CancellationToken cancellationToken)
-    {
-        return _userRolesProvider.FindUserRoleAsync(userId, roleId);
     }
 
     /// <summary>
@@ -325,89 +245,6 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
         CancellationToken cancellationToken)
     {
         return await _userLoginsProvider.FindUserLoginAsync(loginProvider, providerKey);
-    }
-
-    /// <summary>
-    /// Adds the given <paramref name="normalizedRoleName"/> to the specified <paramref name="user"/>.
-    /// </summary>
-    /// <param name="user">The user to add the role to.</param>
-    /// <param name="normalizedRoleName">The role to add.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-    public override async Task AddToRoleAsync(TUser user, string normalizedRoleName,
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(user);
-         var roleEntity = await FindRoleAsync(normalizedRoleName, cancellationToken);
-        if (roleEntity == null)
-        {
-            throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Resources.RoleNotFound, normalizedRoleName));
-        }
-        await _userRolesProvider.AddUserRoleAsync(CreateUserRole(user, roleEntity));
-    }
-
-    /// <summary>
-    /// Removes the given <paramref name="normalizedRoleName"/> from the specified <paramref name="user"/>.
-    /// </summary>
-    /// <param name="user">The user to remove the role from.</param>
-    /// <param name="normalizedRoleName">The role to remove.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-    public override async Task RemoveFromRoleAsync(TUser user, string normalizedRoleName,
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(user);
-
-        var roleEntity = await FindRoleAsync(normalizedRoleName, cancellationToken);
-        if (roleEntity != null)
-        {
-            var userRole = await FindUserRoleAsync(user.Id, roleEntity.Id, cancellationToken);
-            if (userRole != null)
-            {
-                await _userRolesProvider.RemoveUserRoleAsync(user.Id, roleEntity.Id);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Retrieves the roles the specified <paramref name="user"/> is a member of.
-    /// </summary>
-    /// <param name="user">The user whose roles should be retrieved.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>A <see cref="Task{TResult}"/> that contains the roles the user is a member of.</returns>
-    public override async Task<IList<string>> GetRolesAsync(TUser user,
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(user);
-        var userId = user.Id;
-        return await _userRolesProvider.GetRolesAsync(userId);
-    }
-
-    /// <summary>
-    /// Returns a flag indicating if the specified user is a member of the give <paramref name="normalizedRoleName"/>.
-    /// </summary>
-    /// <param name="user">The user whose role membership should be checked.</param>
-    /// <param name="normalizedRoleName">The role to check membership of</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>A <see cref="Task{TResult}"/> containing a flag indicating if the specified user is a member of the given group. If the
-    /// user is a member of the group the returned value with be true, otherwise it will be false.</returns>
-    public override async Task<bool> IsInRoleAsync(TUser user, string normalizedRoleName,
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(user);
-
-        var role = await FindRoleAsync(normalizedRoleName, cancellationToken);
-        if (role == null) return false;
-        var userRole = await FindUserRoleAsync(user.Id, role.Id, cancellationToken);
-        return userRole != null;
     }
 
     /// <summary>
@@ -492,7 +329,7 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(user);
         ArgumentNullException.ThrowIfNull(login);
-        
+
         await _userLoginsProvider.AddLoginAsync(user.Id, login);
     }
 
@@ -511,7 +348,6 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(user);
         var entry = await FindUserLoginAsync(user.Id, loginProvider, providerKey, cancellationToken);
-        
         if (entry != null)
         {
             await _userLoginsProvider.RemoveLoginAsync(entry);
@@ -592,31 +428,6 @@ public class UserStore<TUser, TRole, [DynamicallyAccessedMembers(DynamicallyAcce
         ArgumentNullException.ThrowIfNull(claim);
 
         return await _userClaimsProvider.GetUsersForClaimAsync(claim);
-    }
-
-    /// <summary>
-    /// Retrieves all users in the specified role.
-    /// </summary>
-    /// <param name="normalizedRoleName">The role whose users should be retrieved.</param>
-    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    /// <returns>
-    /// The <see cref="Task"/> contains a list of users, if any, that are in the specified role.
-    /// </returns>
-    public override async Task<IList<TUser>> GetUsersInRoleAsync(string normalizedRoleName,
-        CancellationToken cancellationToken = default(CancellationToken))
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfDisposed();
-        ArgumentException.ThrowIfNullOrEmpty(normalizedRoleName);
-
-        var role = await FindRoleAsync(normalizedRoleName, cancellationToken);
-
-        if (role != null)
-        {
-            return await _userRolesProvider.GetUsersInRoleAsync(role.Id);
-        }
-
-        return new List<TUser>();
     }
 
     /// <summary>
